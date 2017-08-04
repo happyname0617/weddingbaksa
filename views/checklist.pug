@@ -5,27 +5,27 @@ body
   .container-fluid.theme-showcase(role='main')
     .row
       .col-md-12.col-xs-12
-        h2 결혼과정을 한눈에 편리하게!
-    .row
-      .col-md-12.col-xs-12
-        h3 결혼 체크 포인트
-        .list-group
-          a.list-group-item(href='#') 신랑 신부 정보 입력
-          a.list-group-item(href='#') 결혼 날짜 정하기
-          a.list-group-item(href='#') 결혼 장소 정하기
-          a.list-group-item(href='#') 상견례
-          a.list-group-item(href='#') 예식장 예약
-          a.list-group-item(href='#') 신혼살림 장만
-          a.list-group-item(href='#') 신랑 신부 정보 입력
-          a.list-group-item(href='#') 결혼 날짜 정하기
-          a.list-group-item(href='#') 결혼 장소 정하기
-          a.list-group-item(href='#') 상견례
-          a.list-group-item(href='#') 예식장 예약
-          a.list-group-item(href='#') 신혼살림 장만
-        
-
-
-
+        h2 체크리스트
+        div
+          ul.list-group
+            li.list-group-item
+              .row
+                .col-md-3 D-DAY
+                .col-md-6 항목
+                .col-md-3
+                .col-md-3
+            each checkitem in basiclist 
+              li.list-group-item
+                .row
+                  .col-md-3 #{checkitem.dday}
+                  .col-md-6
+                    input(id='cb'+checkitem._id,type='checkbox', aria-label='...')
+                    label(for='cb'+checkitem._id) #{checkitem.title}
+                  .col-md-3
+                    .btn.btn-default 수정
+        .row
+          .col-md-12.col-xs-12
+            button#insert.btn.btn-default(type='submit') 항목 추가하기
   script.
     $(document).ready(function(){
       $('a').click(function()
