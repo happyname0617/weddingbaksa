@@ -2,6 +2,41 @@
 @import url(https://fonts.googleapis.com/earlyaccess/nanumbrushscript.css);
 @import url(https://fonts.googleapis.com/earlyaccess/nanumgothic.css);
 
+.withBackground{
+    background: url(http://822420fb08c1898dea0e-c9228deb93c56b2bac4bc2862bfae73e.r6.cf1.rackcdn.com/lps/assets/u/fpt-112704-Wedding-Flowers.jpg) no-repeat center top fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    background-position: center;
+}
+
+.card-columns .card{
+  /*display: inline-block;*/
+  border:1px solid rgba(0,0,0,0.2);
+  margin:0;
+  margin-bottom: 15px;
+  padding:10px;
+  box-shadow: 2px 2px 5px 
+}
+.card {
+  width:20rem;
+}
+.card-columns .card img{
+  width:100%;
+}
+.stickyfooter {
+  position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 60px;
+      background-color: #808080;
+}
+input[type=checkbox]:checked + label {
+  /*color:red;*/
+  text-decoration: line-through;
+} /*This is the MDN spec for doing this*/
+
 
 .mainimg {
   background:url(http://www.weddingritz.com/files/attach/images/185166/415/806/009/648c15332f0ab1cf4b94a30e4682fbc2.jpg)no-repeat;
