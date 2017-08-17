@@ -1,6 +1,7 @@
 <template>
   <div class="home">
       <h1 class='page-header'>Home</h1>
+      <h1 class='page-header'>landing page info will be added here</h1>
       <!-- {{isloggedin}}
         <a href="http://localhost:3000/auth/facebook">
               Login with Facebook

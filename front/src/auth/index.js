@@ -87,6 +87,6 @@ export default {
 		return {
             'Authorization': localStorage.getItem('id_token')
 		}
-    }
+    },
 
 }

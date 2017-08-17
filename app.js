@@ -137,6 +137,66 @@ app.post('/user/register', (req, res, next) => {
   });
 });
 function addInitialChecklist(userid){
+  console.log('addInitialChecklist');
+  var table = {};
+  //get all category list from bskim user
+  Category.getCategoryByOwnerId('599601cf814fd55e304dad19', (err, list) => {
+    // console.log('typeof list',typeof list);
+    // console.log(JSON.stringify(list));
+    console.log('list.length',list.length)
+    async.forEach(list,function(item,callback){
+        let newCategory = new Category({
+          ownerid: userid,
+          title: item.title,
+          memo: item.memo, 
+          required: item.required,
+          descryption: item.descryption,
+          budget:item.budget,
+          budget_avg:item.budget_avg,
+          budget_automatic:item.budget_automatic
+        });   
+        Category.addCategory(newCategory, (err, category) => {
+          if(err){
+            console.log(err);
+            callback(err)
+          }
+          else{
+            console.log('added category',category);
+            var newCategoryID = category._id;
+            table[item._id] = newCategoryID;
+            callback()
+          }
+        })
+      },function(err){
+        console.log('table',table);
+        Todo.getTodoByOwnerId('599601cf814fd55e304dad19', (err, todos) => {
+          todos.forEach(function(todo){
+            let categoryid = table[todo.categoryid];
+            console.log('categoryid',categoryid)
+            let newTodo = new Todo({
+              ownerid: userid,
+              categoryid: categoryid,
+              title: todo.title,
+              memo: todo.memo,
+              completed: todo.completed,
+              descryption: todo.descryption,
+              budget:todo.budget,
+              budget_avg:todo.budget_avg
+            })
+        
+            Todo.addTodo(newTodo, (err, addedTodo) => {
+              console.log('addedTodo',addedTodo)
+            })
+              
+          })
+        })
+    })
+
+
+
+
+ 
+  })
 
 }
 function createToken(userid){
@@ -315,6 +375,8 @@ app.get('/get/userinfo',passport.authenticate('jwt', { session: false }),functio
 
   
 })
+    
+    
 app.get('/category/list/:userid',passport.authenticate('jwt', { session: false }),function(req, res) {
     console.log('/get/category/',req.params.userid)
     var userid = req.params.userid;
@@ -421,6 +483,9 @@ app.get('/todo/get/:userid',passport.authenticate('jwt', { session: false }),fun
     })
 
 });
+
+
+    
 app.post('/todo/add',passport.authenticate('jwt', { session: false }),function(req, res) {
     console.log('/todo/add',req.body.ownerid);
     var budget = parseInt(req.body.budget)
@@ -665,16 +730,16 @@ app.get('/auth/google/callback',
   passport.authenticate('google', { successRedirect:'/',
                                     failureRedirect: '/' }));
 
-app.get('/',function(req,res){
-  if(req.user) //logged in user?
-  {
-    res.render('home_login');
-  }
-  else{
-    res.render('landingpage');
+// app.get('/',function(req,res){
+//   if(req.user) //logged in user?
+//   {
+//     res.render('home_login');
+//   }
+//   else{
+//     res.render('landingpage');
     
-  }
-})
+//   }
+// })
 
 app.listen(process.env.PORT || config.NODE_PORT, process.env.IP || "0.0.0.0",function(){
   logger.info('listening on %s',process.env.PORT||config.NODE_PORT)
