@@ -2,39 +2,72 @@ var env = process.env.NODE_ENV || 'development';
 var config = require('./config')[env];
 //var dictionary = require('./dictionary');
 const express = require('express')
-var session = require('express-session');
+//var session = require('express-session');
+const path = require('path');
+const bodyParser = require('body-parser');
 //var FileStore = require('session-file-store')(session);
-const MongoStore = require('connect-mongo')(session);
+//const MongoStore = require('connect-mongo')(session);
 var winston = require('winston');
 var async = require("async");
-
+var cors = require('cors')
 var app = express()
-var request = require('request');
+//var request = require('request');
 var VError = require('verror');
 var fs = require('fs')
 var _ = require('underscore');
-var bodyParser = require('body-parser');
-
-var MongoClient = require('mongodb').MongoClient;
-var ObjectId = require('mongodb').ObjectID;
+var jwt = require('jsonwebtoken');
+var passportJWT = require("passport-jwt");
+var ExtractJwt = passportJWT.ExtractJwt;
+var JwtStrategy = passportJWT.Strategy;
+//var MongoClient = require('mongodb').MongoClient;
+//var ObjectId = require('mongodb').ObjectID;
 var assert = require('assert');
-
-
+const mongoose = require('mongoose');
 var passport = require('passport')
-var FacebookStrategy = require('passport-facebook').Strategy;
-var GoogleStrategy = require('passport-google-oauth20').Strategy;
+const User = require('./models/user');
+const Todo = require('./models/todo');
+const Category = require('./models/category');
 
-app.use(express.static('client'))
-app.use(bodyParser.urlencoded({ extended: false }))
+let opts = {};
+opts.jwtFromRequest = ExtractJwt.fromAuthHeader();
+opts.secretOrKey = config.SECRET_KEY;
+passport.use(new JwtStrategy(opts, (jwt_payload, done) => {
+  console.log('jwt_payload');
+  User.getUserById(jwt_payload.id, (err, user) => {
+    if(err){
+      console.log('JwtStrategy',err)
+      return done(err, false);
+    }
+
+    if(user){
+      console.log('JwtStrategy',user)
+      return done(null, user);
+    } else {
+      console.log('JwtStrategy no user')
+      return done(null, false);
+    }
+  });
+}));
+
+
+//passport.use(jwtstrategy);
+// var FacebookStrategy = require('passport-facebook').Strategy;
+// var GoogleStrategy = require('passport-google-oauth20').Strategy;
+
+app.use(express.static(path.join(__dirname, 'client')))
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 app.set('view engine', 'pug');
 app.set('views', './views');
+app.use(cors());
+//const users = require('./routes/users');
 
-app.use(session({
-  secret: config.SESSION_SECRET_KEY,
-  resave: false,
-  saveUninitialized: true,
-  store:new MongoStore({ url: config.DB_URL })
-}));
+// app.use(session({
+//   secret: config.SESSION_SECRET_KEY,
+//   resave: false,
+//   saveUninitialized: true,
+//   store:new MongoStore({ url: config.DB_URL })
+// }));
 
 var logger = new (winston.Logger)({
   transports: [
@@ -43,130 +76,427 @@ var logger = new (winston.Logger)({
     })
   ]
 });
-var mongodb;
-var collectionUser;
-var collectionList;
-function dbconnect(url,callback)
-{
 
-  logger.info("DB connect")
-  MongoClient.connect(url, function(err, db) {
-     if (err) { 
-        var error = new VError(err,"DB connect %s", url) 
-        logger.error(error);
-        callback(error); 
-     }
-    logger.info("Connected correctly to server");
-    mongodb=db;
-    collectionUser = mongodb.collection('User');
-    collectionList = mongodb.collection('Wishlist');
-    callback();
+// var mongodb;
+// var collectionUser;
+// var collectionList;
+// function dbconnect(url,callback)
+// {
+
+//   logger.info("DB connect")
+//   MongoClient.connect(url, function(err, db) {
+//      if (err) { 
+//         var error = new VError(err,"DB connect %s", url) 
+//         logger.error(error);
+//         callback(error); 
+//      }
+//     logger.info("Connected correctly to server");
+//     mongodb=db;
+//     collectionUser = mongodb.collection('User');
+//     collectionList = mongodb.collection('Wishlist');
+//     callback();
+//   });
+// }
+
+// function dbdisconnect(){
+//   mongodb.close();
+// }
+
+
+app.post('/user/register', (req, res, next) => {
+  console.log(req.body)
+  let newUser = new User({
+    name: req.body.name,
+    email: req.body.email,
+    username: req.body.username,
+    password: req.body.password
   });
-}
 
-function dbdisconnect(){
-  mongodb.close();
-}
+  User.addUser(newUser, (err, user) => {
+    if(err){
+      res.json({success: false, msg:'Failed to register user'});
+    } else {
+      const token = createToken(user.id);
+      res.json({
+        success: true,
+        token: 'JWT '+token,
+        user: {
+          id: user._id,
+          name: user.name,
+          username: user.username,
+          email: user.email
+        },
+        msg:'User registered'
+      });
 
+      //add inital checklist to user
+      addInitialChecklist(user.id);
+
+      //res.json({success: true, msg:'User registered'});
+    }
+  });
+});
+function addInitialChecklist(userid){
+
+}
+function createToken(userid){
+  var payload = {id: userid};
+  const token = jwt.sign(payload, config.SECRET_KEY, {
+    expiresIn: 604800 // 1 week
+  });
+  return token;
+}
+app.post('/login',function(req,res){
+  const username = req.body.username;
+  const password = req.body.password;
+  console.log('username:',req.body.username);
+  console.log('password:',req.body.password);
+  User.getUserByUsername(username, (err, user) => {
+    if(err) throw err;
+    if(!user){
+      return res.json({success: false, msg: 'User not found'});
+    }
+
+    User.comparePassword(password, user.password, (err, isMatch) => {
+      if(err) throw err;
+      if(isMatch){
+        const token = createToken(user.id);
+        // const token = jwt.sign(payload, config.SECRET_KEY, {
+        //   expiresIn: 604800 // 1 week
+        // });
+
+        res.json({
+          success: true,
+          token: 'JWT '+token,
+          user: {
+            id: user._id,
+            name: user.name,
+            username: user.username,
+            email: user.email
+          }
+        });
+      } else {
+        return res.json({success: false, msg: 'Wrong password'});
+      }
+    });
+  });
+})
+
+
+app.get("/secret", passport.authenticate('jwt', { session: false }), function(req, res){
+  res.json({message: "Success! You can not see this without a token"});
+});
 
 
 app.use(passport.initialize());
-app.use(passport.session());
+//app.use(passport.session());
+//require('./passport')(passport);
+// app.use('/users', users);
+// passport.use(new GoogleStrategy({
+//     clientID: config.GOOGLE_CLIENT_ID,
+//     clientSecret: config.GOOGLE_CLIENT_SECRET,
+//     callbackURL: config.GOOGLE_CALLBACK_URL
+//   },
+//   function(accessToken, refreshToken, profile, done) {
+//     logger.info(profile.name)
+//     var _id = 'google:'+profile.id;;
+//       collectionUser.findOne({_id:_id},function(err, foundUser) {
+//         if (err) {logger.error('google strategy:',err); return done(err); }
+//         if(foundUser){
+//           logger.info("user already exist, proceed to login")
+//           done(null, foundUser);
+//         }
+//         else
+//         {
+//           logger.info("new user, proceed to login")
+//           var newuser = profile._json;
+//           newuser._id = _id;
+//           newuser.displayName = JSON.stringify(profile._json.name);
+//           logger.info('new user displayName',newuser.displayName)
 
-passport.use(new GoogleStrategy({
-    clientID: config.GOOGLE_CLIENT_ID,
-    clientSecret: config.GOOGLE_CLIENT_SECRET,
-    callbackURL: config.GOOGLE_CALLBACK_URL
-  },
-  function(accessToken, refreshToken, profile, done) {
-    logger.info(profile.name)
-    var _id = 'google:'+profile.id;;
-      collectionUser.findOne({_id:_id},function(err, foundUser) {
-        if (err) {logger.error('google strategy:',err); return done(err); }
-        if(foundUser){
-          logger.info("user already exist, proceed to login")
-          done(null, foundUser);
-        }
-        else
-        {
-          logger.info("new user, proceed to login")
-          var newuser = profile._json;
-          newuser._id = _id;
-          newuser.displayName = JSON.stringify(profile._json.name);
-          logger.info('new user displayName',newuser.displayName)
+//           collectionUser.insertOne(newuser,function(err, newuser) {
+//             if (err) {var newError = VError(err,'google strategy InsertOne'); return done(newError); }
+// 	        });
+//           done(null,newuser);
+//         }
+//       });
+//   }
+// ));
 
-          collectionUser.insertOne(newuser,function(err, newuser) {
-            if (err) {var newError = VError(err,'google strategy InsertOne'); return done(newError); }
-	        });
-          done(null,newuser);
-        }
-      });
-  }
-));
+// passport.use(
+//   new FacebookStrategy({
+//     clientID: config.FACEBOOK_APP_ID,
+//     clientSecret: config.FACEBOOK_APP_SECRET,
+//     callbackURL: config.FACEBOOK_CALLBACK_URL,
+//     profileFields:['id', 'email', 'gender', 'link', 'locale', 'name', 'timezone', 'verified', 'displayName','age_range']
+//   },
+//   function(accessToken, refreshToken, profile, done) {
+//     logger.info('facebook login:',profile.name);
+//     var _id = 'facebook:'+profile.id;;
+//       collectionUser.findOne({_id:_id},function(err, foundUser) {
+//         if (err) {logger.error(err); return done(err); }
+//         if(foundUser){
+//           logger.info("user already exist, proceed to login")
+//           done(null, foundUser);
+//         }
+//         else
+//         {
+//           logger.info("new user, proceed to login")
+//           var newuser = profile._json;
+//           newuser._id = _id;
+//           newuser.displayName = profile._json.name;
+//           collectionUser.insertOne(newuser,function(err, newuser) {
+//             if (err) {var newError = VError(err,'facebook strategy insertOne'); return done(newError); }
+// 	        });
+//           done(null,newuser);
+//         }
+//       });
+//   }
 
-passport.use(
-  new FacebookStrategy({
-    clientID: config.FACEBOOK_APP_ID,
-    clientSecret: config.FACEBOOK_APP_SECRET,
-    callbackURL: config.FACEBOOK_CALLBACK_URL,
-    profileFields:['id', 'email', 'gender', 'link', 'locale', 'name', 'timezone', 'verified', 'displayName','age_range']
-  },
-  function(accessToken, refreshToken, profile, done) {
-    logger.info('facebook login:',profile.name);
-    var _id = 'facebook:'+profile.id;;
-      collectionUser.findOne({_id:_id},function(err, foundUser) {
-        if (err) {logger.error(err); return done(err); }
-        if(foundUser){
-          logger.info("user already exist, proceed to login")
-          done(null, foundUser);
-        }
-        else
-        {
-          logger.info("new user, proceed to login")
-          var newuser = profile._json;
-          newuser._id = _id;
-          newuser.displayName = profile._json.name;
-          collectionUser.insertOne(newuser,function(err, newuser) {
-            if (err) {var newError = VError(err,'facebook strategy insertOne'); return done(newError); }
-	        });
-          done(null,newuser);
-        }
-      });
-  }
-
-));
+// ));
 
 
-passport.serializeUser(function(user, done) {
-  logger.info('         serializeUser',user._id, user.name);
-  done(null, user._id);
-});
+// passport.serializeUser(function(user, done) {
+//   logger.info('         serializeUser',user._id, user.name);
+//   done(null, user._id);
+// });
 
-passport.deserializeUser(function(id, done) {
- collectionUser.findOne({_id:id},function(err, foundUser) {
-        if(err){logger.error('deserializeUser',err); return done(err);}
-        if(foundUser)
-        {
-          logger.info('         deserializeUser ', id, foundUser.name)
-          done(err, foundUser);
-        }
-        else
-        {
-          done('not existing FoundUser');
-        }
-  });
+// passport.deserializeUser(function(id, done) {
+//   console.log('deserializ user trial')
+//  collectionUser.findOne({_id:id},function(err, foundUser) {
+//         if(err){logger.error('deserializeUser',err); return done(err);}
+//         if(foundUser)
+//         {
+//           logger.info('         deserializeUser ', id, foundUser.name)
+//           done(err, foundUser);
+//         }
+//         else
+//         {
+//           done('not existing FoundUser');
+//         }
+//   });
 
-});
+// });
 
 
 function initialize(){
-  dbconnect(config.DB_URL,function(err){
-    if (err) { var newError = new VError(err,'initialize dbconnect');  return newError; }
-
+    // Connect To Database
+  
+  mongoose.connect(config.DB_URL);
+  var db = mongoose.connection;
+  // On Connection
+  db.on('open', () => {
+    console.log('Connected to database '+config.DB_URL);
   });
+
+  // On Error
+  db.on('error', (err) => {
+    console.log('Database error: '+err);
+  });
+
+  // dbconnect(config.DB_URL,function(err){
+  //   if (err) { var newError = new VError(err,'initialize dbconnect');  return newError; }
+
+  // });
 }
 
 initialize();
+// var todos = [
+//                 {id:'1',owner:'bskim',categoryid:'8',title:'장소,기간,예산 계획hh',completed:false,memo:''},
+//             {id:'2',owner:'bskim',categoryid:'8',title:'예약완료',completed:false,memo:''},
+//             {id:'3',owner:'bskim',categoryid:'8',title:'여권준비',completed:false,memo:''},
+//             {id:'4',owner:'bskim',categoryid:'8',title:'비자준비(필요시)',completed:false,memo:''},
+//             {id:'5',owner:'bskim',categoryid:'8',title:'신혼여행 준비물 리스트작성',completed:false,memo:''},
+//             {id:'6',owner:'bskim',categoryid:'8',title:'해외여행시 신용카드준비',completed:false,memo:''}
+// ]
+app.get('/get/userinfo',passport.authenticate('jwt', { session: false }),function(req,res){
+  
+    return res.json(req.user);
+
+  
+})
+app.get('/category/list/:userid',passport.authenticate('jwt', { session: false }),function(req, res) {
+    console.log('/get/category/',req.params.userid)
+    var userid = req.params.userid;
+    //res.json(todos);
+    Category.getCategoryByOwnerId(userid, (err, list) => {
+      if(err){
+        res.json({success: false, msg:'Failed to get category list'});
+      }
+      else{
+        res.json(list);
+      }
+      
+    })
+
+});
+app.post('/category/add',passport.authenticate('jwt', { session: false }),function(req, res) {
+    console.log('/category/add',req.body.ownerid);
+    var budget = parseInt(req.body.budget)
+    var budget_avg = parseInt(req.body.budget_avg)
+
+    let newCategory = new Category({
+      ownerid: req.body.ownerid,
+      title: req.body.title,
+      memo: req.body.memo, 
+      required: req.body.required,
+      descryption: req.body.descryption,
+      budget:budget,
+      budget_avg:budget_avg,
+      budget_automatic:req.body.budget_automatic
+    });   
+
+
+    Category.addCategory(newCategory, (err, category) => {
+      if(err){
+        console.log(err);
+        res.json({success: false, msg:'Failed to add new newCategory'});
+      }
+      else{
+        res.json({success: true, msg:'succeed to add new newCategory'});
+      }
+      
+    })
+
+});
+
+app.put('/category/update',passport.authenticate('jwt', { session: false }),function(req, res) {
+      console.log('/category/update',req.body._id);
+    var budget = parseInt(req.body.budget)
+    var budget_avg = parseInt(req.body.budget_avg)
+  
+    let newCategory = {
+      ownerid: req.body.ownerid,
+      title: req.body.title,
+      memo: req.body.memo, //TODO
+      required: req.body.required,//TODO
+      descryption: req.body.descryption, //TODO
+      budget:budget,
+      budget_avg:budget_avg,
+      budget_automatic:req.body.budget_automatic        
+
+    }   
+
+
+    Category.updateCategory(req.body._id,newCategory, (err, category) => {
+      if(err){
+        console.log(err);
+        res.json({success: false, msg:'Failed to update newCategory'});
+      }
+      else{
+        console.log('return',category);
+        res.json({success: true, msg:'succeed to update newCategory'});
+      }
+      
+    })
+
+}); 
+app.delete('/category/delete/:id',passport.authenticate('jwt', { session: false }),function(req, res) {
+    console.log('/category/delete/',req.params.id);
+    console.log('/category/delete/ owner:',req.user._id)
+    var categoryid = req.params.id;
+    Category.deleteCategoryById(categoryid,req.user._id, (err, list) => {
+      if(err){
+        res.json({success: false, msg:'Failed to delete category'});
+      }
+      else{ 
+        res.json({success: true, msg:'succeed to delete category'});
+      }
+       
+    })
+
+});  
+app.get('/todo/get/:userid',passport.authenticate('jwt', { session: false }),function(req, res) {
+    console.log('/todo/get/',req.params.userid)
+    var userid = req.params.userid;
+    //res.json(todos);
+    Todo.getTodoByOwnerId(userid, (err, todos) => {
+      if(err){
+        res.json({success: false, msg:'Failed to get todo list'});
+      }
+      else{
+        res.json(todos);
+      }
+      
+    })
+
+});
+app.post('/todo/add',passport.authenticate('jwt', { session: false }),function(req, res) {
+    console.log('/todo/add',req.body.ownerid);
+    var budget = parseInt(req.body.budget)
+    var budget_avg = parseInt(req.body.budget_avg)
+
+    let newTodo = new Todo({
+      ownerid: req.body.ownerid,
+      categoryid: req.body.categoryid,
+      title: req.body.title,
+      memo: req.body.memo,
+      completed: req.body.completed,
+      descryption: req.body.descryption,
+      budget:budget,
+      budget_avg:budget_avg,
+    })
+
+    Todo.addTodo(newTodo, (err, todos) => {
+      if(err){
+        console.log(err);
+        res.json({success: false, msg:'Failed to add new todo item into todo list'});
+      }
+      else{
+        res.json({success: true, msg:'succeed to add new todo item into todo list'});
+      }
+      
+    })
+
+});
+
+
+
+app.put('/todo/update',passport.authenticate('jwt', { session: false }),function(req, res) {
+    console.log('/todo/update',req.body._id);
+ 
+    var budget = parseInt(req.body.budget)
+    var budget_avg = parseInt(req.body.budget_avg)
+   
+    let newTodo = {
+      ownerid:req.body.ownerid,
+      categoryid: req.body.categoryid,
+      title: req.body.title,
+      memo: req.body.memo,
+      budget:budget,
+      budget_avg:budget_avg,
+      completed: req.body.completed,
+      descryption: req.body.descryption
+    }
+
+    Todo.updateTodo(req.body._id,newTodo, (err, todos) => {
+      if(err){
+        console.log(err);
+        res.json({success: false, msg:'Failed to update todo'});
+      }
+      else{
+        console.log('matching',todos);
+        res.json({success: true, msg:'succeed to update todo'});
+      }
+      
+    })
+
+});
+app.delete('/todo/delete/:id',passport.authenticate('jwt', { session: false }),function(req, res) {
+  console.log('/todo/delete/',req.params.id);
+  console.log('/todo/delete/ owner:',req.user._id)
+  var todoid = req.params.id;
+  Todo.deleteTodoById(todoid,req.user._id, (err, list) => {
+    if(err){
+      res.json({success: false, msg:'Failed to delete todo'});
+    }
+    else{ 
+      res.json({success: true, msg:'succeed to delete todo'});
+    }
+     
+  })
+
+});  
 
 app.get('/checklist',function(req, res) {
   var list = [
@@ -325,8 +655,8 @@ app.get('/auth/facebook', passport.authenticate('facebook',{scope:'email'}));
 // access was granted, the user will be logged in.  Otherwise,
 // authentication has failed.
 app.get('/auth/facebook/callback',
-  passport.authenticate('facebook', { successRedirect: '/',
-                                      failureRedirect: '/' }));
+  passport.authenticate('facebook', { successRedirect: 'http://localhost:8080/',
+                                      failureRedirect: 'http://localhost:8080/' }));
 
 
 app.get('/auth/google',passport.authenticate('google', { scope: ['profile','email'] }));

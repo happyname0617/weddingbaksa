@@ -1,0 +1,892 @@
+<template>
+  <section>
+        <div class="row">
+            <div class="col-sm-3 col-md-2 sidebar">
+                <!-- <h1 class='page-header'>카테고리</h1> -->
+                <!-- <input class="new-category"
+                placeholder="추가할 카테고리를 넣으세요"
+                v-model="newCategory.title"
+                @keyup.enter="addCatogory"> -->
+                <ul class="category-list nav nav-pills nav-stacked">
+                   
+                    <li class="category"  @click="selectAll()" :class="{active:selectedCategory._id=='all'}">
+                        <label>전체</label>
+                        <span> 예산{{getAllbudget()}}만원</span>
+                    </li>
+                    <li v-for="category in categories"
+                        class="category"
+                        :key="category._id"
+                        :class="{active:category==selectedCategory}"
+                        @click="selected(category)" @dblclick="categoryEdit(category)">
+                        <label v-show='category!=editingCategory' :class="{notrequired: !category.required}">{{ category.title }}</label>
+                        <input type='text'  v-show='category==editingCategory' @keyup.esc='categoryCancelEdit()' @keyup.enter='updateCategory(category)' v-model='category.title'> <!-- v-focus='category==editingCategory' -->
+                        <input v-show='category==editingCategory' type="radio" :id='category._id+"_yes"' :value='true' :name='category._id' v-model="category.required"><label v-show='category==editingCategory'>해요</label>
+                        <input v-show='category==editingCategory' type="radio" :id='category._id+"_no"' :value='false' :name='category._id' v-model="category.required"><label v-show='category==editingCategory'>안해요</label>
+                        <span v-show='category.required && (category.budget_automatic?getbudget(category):category.budget)>0 && category!=editingCategory'>예산{{category.budget_automatic?getbudget(category):category.budget}}만원</span>
+                        <span v-show='category.required && category==editingCategory'>
+                            <span>예산</span>
+                            <span><input type="radio" :id='category._id+"_budgetAutoYes"' :value='true' :name='category._id+"_budget"' v-model="category.budget_automatic">자동계산</span>
+                            <span><input type="radio" :id='category._id+"_budgetAutoNo"' :value='false' :name='category._id+"_budget"' v-model="category.budget_automatic">수동입력</span>
+                            <span v-show='category.budget_automatic==false'><input type="number" @keyup.esc='categoryCancelEdit()' @keyup.enter='updateCategory(category)'  v-model="category.budget" placeholder="예산">만원
+                            평균{{category.budget_avg}} 만원</span>
+                        </span>
+                        <button v-show='category==editingCategory' @click='updateCategory(category)'>Update</button>
+                        <!-- <button v-show='category==editingCategory' @click='deleteCategory(category)'>Delete</button> -->
+                        
+                    </li>
+                </ul>    
+            </div>  
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 checklist">
+                <!-- <h1 class='page-header'>할일목록</h1> -->
+                <h1 class='page-header'>{{selectedCategory.title}}</h1>
+                <input class="new-todo" 
+                :class="{hidden:selectedCategory._id=='all'}"
+                placeholder="추가할 항목을 넣으세요"
+                v-model="newTodo.title"
+                @keyup.enter="addTodo">
+                <ul class="todo-list">
+                    <li v-for="todo in filteredtodo"
+                        class="todo"
+                        :key="todo._id"
+                        :class="{completed: todo.completed, editing:todo==editingTodo}"
+                        @dblclick="todoEdit(todo)">
+                        <div class='row vcenter'>
+
+                            <input class="toggle col-sm-1" type="checkbox" v-model="todo.completed">
+                            <label v-show='todo!=editingTodo' class='col-sm-5'>{{ todo.title }}</label>
+                            <!-- <input type="number" v-model="todo.budget"> -->
+                            <input class="col-sm-5 edit" v-show='todo==editingTodo' type='text'  @keyup.esc='todoCancelEdit()' @keyup.enter='updateTodo(todo)' v-model='todo.title'> <!-- v-focus='todo==editingTodo' -->
+                            <span v-show='todo.budget>0 && todo!=editingTodo' class='col-sm-6'>예산{{todo.budget}}만원</span>
+                            <span v-show='todo.budget==0 && todo!=editingTodo' class='col-sm-6'></span>
+                            <span v-show='todo==editingTodo' class='col-sm-4 ' >
+                                <span>예산<input type="number" @keyup.esc='todoCancelEdit()' @keyup.enter='updateTodo(todo)'  v-model="todo.budget" placeholder="예산">만원</span>
+                                <span v-show='todo.budget_avg>=0'>평균{{todo.budget_avg}} 만원</span>
+                            </span>
+                            <!-- <input type="number" @keyup.esc='todoCancelEdit()' @keyup.enter='updateTodo(todo)' v-model="todo.budget" v-if='todo==editingTodo'>
+                            <input type="number" @keyup.esc='todoCancelEdit()' @keyup.enter='updateTodo(todo)' v-model="todo.budget_avg" v-if='todo==editingTodo'> -->
+                            <button v-if='todo==editingTodo' class='col-sm-1 btn btn-default' @click='updateTodo(todo)'>저장</button>
+                            <button v-if='todo==editingTodo' class='col-sm-1 btn btn-default' @click='removeTodo(todo)'>삭제</button>
+                        </div>
+                    </li>
+                </ul>        
+            </div>
+        </div>
+    <!-- <footer class="info">
+    <p>Double-click to edit a todo</p>
+    <p>Written by <a href="http://evanyou.me">Evan You</a></p>
+    <p>Part of <a href="http://todomvc.com">TodoMVC</a></p>
+    </footer> -->
+
+  </section>
+</template>
+<script>
+import auth from '../auth'
+// let currentIdx =0;
+export default {
+  name: 'checklist',
+  data () {
+    return {
+        //userid:'bskim',
+        message:'message place',
+        categories:[
+            // {id:'1',title:'상견례',description:'',required:true},
+            // {id:'2',title:'예물',description:'',required:true},
+            // {id:'3',title:'예단',description:'',required:true},
+            // {id:'4',title:'폐백',description:'',required:true},
+            // {id:'5',title:'스튜디오촬영',description:'',required:true},
+            // {id:'6',title:'피로연',description:'',required:true},
+            // {id:'7',title:'예식장',description:'',required:true},
+            // {id:'8',title:'신혼여행',description:'',required:true}
+            ],
+        todos:[],
+            // {id:'1',categoryid:'8',title:'장소,기간,예산 계획',completed:false,memo:''},
+            // {id:'2',categoryid:'8',title:'예약완료',completed:false,memo:''},
+            // {id:'3',categoryid:'8',title:'여권준비',completed:false,memo:''},
+            // {id:'4',categoryid:'8',title:'비자준비(필요시)',completed:false,memo:''},
+            // {id:'5',categoryid:'8',title:'신혼여행 준비물 리스트작성',completed:false,memo:''},
+            // {id:'6',categoryid:'8',title:'해외여행시 신용카드준비',completed:false,memo:''}
+        //],
+        newTodo:{title:''},
+        editingTodo:{},
+        newCategory:{title:''},
+        editingCategory:{},
+        selectedCategory:{_id:'all',title:'전체'},
+        error:{}
+    }
+  },
+  methods:{
+
+    getAllbudget:function(){
+        var parent = this;
+        return this.categories.reduce(function(acc,item){
+            return acc+(item.budget_automatic?parent.getbudget(item):item.budget);
+        },0);
+    },
+    getbudget:function(category){
+        var newlist =[];
+        var parent=this;
+        newlist = parent.todos.filter(function(element){
+            return (element.categoryid==category._id);
+        });
+        return newlist.reduce(function(acc,item){return acc+=item.budget},0)
+    },
+    todoEdit:function(todo){
+        this.editingTodo=todo; 
+        console.log('todo.editing ',this.editingTodo )
+    },
+    todoCancelEdit: function () {
+      this.editingTodo = null
+      console.log('todo.editing cancel',this.editingTodo )
+    },    
+    categoryEdit:function(category){
+        this.editingCategory=category; 
+        console.log('category.editing ',this.editingCategory )
+    },
+    categoryCancelEdit: function () {
+      this.editingCategory = null
+    },
+    selected:function(category){
+        this.selectedCategory = category;
+    },
+    selectAll:function()
+    {
+        this.selectedCategory={_id:'all',title:'전체'};
+    },
+    fetchCategory: function() {
+          var parent = this;
+          parent.message = "fetching category list...";
+          var userid = auth.user.id;
+          var authHeader = auth.getAuthHeader();
+          console.log('userid',userid)
+          console.log('authHeader',authHeader)
+          this.$http.get('http://localhost:3000/category/list/'+userid,{headers:authHeader})
+          .then(function(response){
+            parent.categories = response.data;
+            console.log(response.data)
+          },error=>{
+
+          });
+        
+    
+    },
+    addCatogory: function () {
+        var value = this.newCategory.title && this.newCategory.title.trim()
+        if (!value) {
+            return
+        }
+        var parent = this;
+        parent.message = "add new category...";
+        var userid = auth.user.id;
+        var authHeader = auth.getAuthHeader();
+        // var newCategory = this.newCategory;
+
+        var newCategory = {
+            ownerid: userid,
+            title: value,
+            memo: '', 
+            required: true,
+            descryption: '',
+            budget:0,
+            budget_avg:0,
+            budget_automatic:true
+
+        }   
+        console.log('userid',userid)
+        console.log('authHeader',authHeader)
+        this.$http.post('http://localhost:3000/category/add',newCategory,{headers:authHeader})
+            .then(function(response){
+            //parent.todos = response.data;
+                parent.newCategory = ''
+                console.log(response.data);
+                // router.push({name:'CheckList'})
+                this.fetchCategory();
+                },error=>{
+                    console.log(error)
+                }
+            );
+              
+        
+    },
+    updateCategory: function (category) {
+        console.log(category)
+        var value = category.title && category.title.trim()
+        if (!value) {
+            return
+        }
+        var parent = this;
+        parent.message = "updating category";
+        var userid = auth.user.id;
+        var authHeader = auth.getAuthHeader();
+        var newCategory = category;
+        newCategory.title = value;
+
+        // var newCategory = {
+        //     _id:category._id,
+        //     ownerid: userid,
+        //     title: category.title,
+        //     memo: category.memo, //TODO
+        //     required: category.required,//TODO
+        //     descryption: category.descryption //TODO
+        // }   
+ 
+        console.log('userid',userid)
+        console.log('authHeader',authHeader)
+        this.$http.put('http://localhost:3000/category/update',newCategory,{headers:authHeader})
+            .then(function(response){
+                this.editingCategory = null
+                console.log(response.data);
+                // router.push({name:'CheckList'})
+                this.fetchCategory();
+                },error=>{
+                    console.log(error)
+                }
+            );
+              
+        
+    },       
+    deleteCategory: function (category) {
+        console.log(category)
+        var parent = this;
+        parent.message = "deleting category";
+
+        var authHeader = auth.getAuthHeader();
+        console.log('authHeader',authHeader)
+        this.$http.delete('http://localhost:3000/category/delete/'+category._id,{headers:authHeader})
+            .then(function(response){
+                this.editingCategory = null
+                console.log(response.data)
+                //router.push({name:'CheckList'})
+                this.fetchCategory();
+                },error=>{
+                    console.log(error)
+                }
+            );
+              
+        
+    },       
+    addTodo: function () {
+        var value = this.newTodo.title && this.newTodo.title.trim()
+        if (!value) {
+            return
+        }
+        var parent = this;
+        parent.message = "adding todo list...";
+        var userid = auth.user.id;
+        var authHeader = auth.getAuthHeader();
+        // var newTodo = this.newTodo;
+        // newTodo.title = value;
+
+        var newTodo = {
+            ownerid: userid,
+            title: this.newTodo.title,
+            categoryid: parent.selectedCategory._id,
+            memo: '', //TODO
+            completed: false,//TODO
+            descryption: '', //TODO
+            budget:0,
+            budget_avg:0
+        }   
+        // console.log('newTodo',newTodo)
+        console.log('authHeader',authHeader)
+        this.$http.post('http://localhost:3000/todo/add',newTodo,{headers:authHeader})
+            .then(function(response){
+            //parent.todos = response.data;
+                parent.newTodo = '';
+                parent.todos.push(newTodo)
+                console.log(response.data)
+                },error=>{
+                    console.log(error)
+                }
+            );
+              
+        
+    },
+    updateTodo: function (todo) {
+        var value = todo.title && todo.title.trim()
+        if (!value) {
+            return
+        }
+        var parent = this;
+        parent.message = "updating todo";
+        var authHeader = auth.getAuthHeader();
+        var newTodo = todo;
+        newTodo.title = value;
+        // {
+        //     _id: todo._id,
+        //     title: value,
+        //     ownerid:todo.ownerid,
+        //     categoryid: todo.categoryid,
+        //     memo: todo.memo, //TODO
+        //     completed: todo.completed,//TODO
+        //     descryption: todo.descryption //TODO
+        // }   
+        console.log('todo._id',todo._id)
+        console.log('authHeader',authHeader)
+        this.$http.put('http://localhost:3000/todo/update',newTodo,{headers:authHeader})
+            .then(function(response){
+//                parent.editingTodo = null;
+                this.editingTodo = null;
+                console.log(response.data);
+                parent.fetchTodos();
+                },error=>{
+                    console.log(error)
+                }
+            );
+              
+        
+    },
+    removeTodo: function (todo) {
+        console.log(todo)
+        var parent = this;
+        parent.message = "deleting todo";
+        var authHeader = auth.getAuthHeader();
+       console.log('authHeader',authHeader)
+        this.$http.delete('http://localhost:3000/todo/delete/'+todo._id,{headers:authHeader})
+            .then(function(response){
+                parent.editingTodo = null
+                console.log(response.data)
+                parent.fetchTodos();
+                //this.todos.splice(this.todos.indexOf(todo), 1)
+                },error=>{
+                    console.log(error)
+                }
+            );
+              
+        
+    },     
+    fetchTodos: 
+        function() {
+          var parent = this;
+          parent.message = "fetching todo list...";
+          var userid = auth.user.id;
+          var authHeader = auth.getAuthHeader();
+          console.log('userid',userid)
+          console.log('authHeader',authHeader)
+          this.$http.get('http://localhost:3000/todo/get/'+userid,{headers:authHeader})
+          .then(function(response){
+            parent.todos = response.data;
+            console.log(response.data)
+          },error=>{
+
+          });
+        }
+    
+  },
+  created:function(){
+     this.fetchTodos();
+     this.fetchCategory();
+  },
+  directives: {
+    'focus': function (el, binding) {
+      if (binding.value) {
+        el.focus()
+      }
+    }
+  },
+  computed:{
+    // allcategorylist:function(){
+    //       var newlist =[];
+    //       newlist.push({_id:'-1',title:'전체',required:true});
+    //       this.categories.forEach(function(element){
+    //           //if(element.required)
+    //            {newlist.push(element);}
+    //       });
+    //       return newlist;
+    // },
+    activeCategoryIds:function(){
+        var newlist =[];
+        this.categories.forEach(function(element){
+            if(element.required) newlist.push(element._id);
+        });
+        return newlist;
+    },
+    allTodos:function(){
+        console.log(this.activeCategoryIds);
+          var parent=this;
+          return this.todos.filter(function(element){
+              return parent.activeCategoryIds.indexOf(element.categoryid)>-1;
+          });
+    },
+    filteredtodo:function(){
+        var newlist =[];
+        var parent=this;
+        if (this.selectedCategory._id=='all') {
+            return this.allTodos;
+        }
+        else{
+            return this.todos.filter(function(element){
+            return (element.categoryid==parent.selectedCategory._id);
+            })
+        }
+
+    },
+
+
+  }
+}
+
+
+</script>
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped>
+
+.notrequired {
+    text-decoration:line-through
+}
+
+/* html,
+body {
+	margin: 0;
+	padding: 0;
+} */
+
+/* button {
+	margin: 0;
+	padding: 0;
+    border: none;
+	background: none;
+	font-size: 100%;
+	vertical-align: baseline;
+	font-family: inherit;
+	font-weight: inherit;
+	color: inherit;
+	-webkit-appearance: none;
+	appearance: none;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+} */
+
+/* body {
+	font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif;
+	line-height: 1.4em;
+	background: #f5f5f5;
+	color: #4d4d4d;
+	min-width: 230px;
+	max-width: 550px;
+	margin: 0 auto;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	font-weight: 300;
+} */
+
+:focus {
+	outline: 0;
+}
+
+.hidden {
+	display: none;
+}
+
+.checklist {
+    display:block;
+	background: #fff;
+    min-width: 230px;
+	max-width: 800px;
+	/* margin: 130px 0 40px 0; */
+    margin-top: 0px;
+    margin-bottom:40px;
+    margin-left:auto;
+    margin-right:auto;
+
+	position: relative;
+	box-shadow: 0 15px 15px 0 rgba(0, 0, 0, 0.2),
+	            0 25px 50px 0 rgba(0, 0, 0, 0.1);
+}
+
+.checklist input::-webkit-input-placeholder {
+	/* font-style: italic; */
+	/* font-weight: 300; */
+    color: white;
+    text-shadow: 1px 1px 4px #000000;
+    }
+
+.checklist input::-moz-placeholder {
+	/* font-style: italic; */
+	/* color: #e6e6e6; */
+    color: white;
+    text-shadow: 1px 1px 4px #000000;
+}
+
+.checklist input::input-placeholder {
+	/* font-style: italic; */
+	font-weight: 300;
+    text-shadow: 1px 1px;
+	/* color: #e6e6e6; */
+    color: white;
+    text-shadow: 1px 1px 4px #000000;
+
+
+}
+
+.checklist h1 {
+	position: relative;
+	/* top: -155px; */
+	width: 100%;
+	font-size: 50px;
+	font-weight: 100;
+	text-align: center;
+	color: rgba(175, 47, 47, 0.75);
+	-webkit-text-rendering: optimizeLegibility;
+	-moz-text-rendering: optimizeLegibility;
+	text-rendering: optimizeLegibility;
+}
+
+.new-todo
+{
+	position: relative;
+	margin: 0;
+	width: 100%;
+	font-size: 24px;
+	font-family: inherit;
+	font-weight: inherit;
+	line-height: 1.4em;
+	border: 0;
+	color: inherit;
+	padding: 6px;
+	border: 1px solid #999;
+	box-shadow: inset 0 -1px 5px 0 rgba(0, 0, 0, 0.2);
+	box-sizing: border-box;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+.edit {
+	position: relative;
+	margin: 0;
+	/* width: 100%; */
+	font-size: inherit;
+	font-family: inherit;
+	font-weight: inherit;
+	/* line-height: 1.2em; */
+	border: 0;
+	color: inherit;
+	padding: 6px;
+	border: 1px solid #999;
+	box-shadow: inset 0 -1px 5px 0 rgba(0, 0, 0, 0.2);
+	box-sizing: border-box;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.new-todo {
+	padding: 16px 16px 16px 60px;
+	/* border: none; */
+    border:1px solid rgba(219, 213, 212, 0.903); 
+	/* background: rgba(219, 213, 212, 0.903); */
+	/* background: #DBD5D4; */
+	box-shadow: inset 0 -2px 1px rgba(0,0,0,0.03);
+}
+
+/* .main {
+	position: relative;
+	z-index: 2;
+	border-top: 1px solid #e6e6e6;
+    display: none;
+} */
+
+
+
+
+.todo-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.todo-list li {
+    padding: 5px 0px;
+	position: relative;
+	font-size: 17px;
+    font-family: 'Nanum Gothic',Dotum,sans-serif;
+
+	/* border-bottom: 1px solid #ededed; */
+}
+
+.todo-list li:last-child {
+	border-bottom: none;
+}
+
+.todo-list li.editing {
+
+	border-bottom: none;
+	/* padding: 0; */
+}
+
+.todo-list li.editing .edit {
+    font-size: inherit;
+    font-family: inherit;
+	display: inline;
+	padding: 12px 16px;
+	margin: 0 0 0 0px;
+}
+input[type=number] {
+    width:60px;
+}
+.todo-list li.editing .view {
+	display: none;
+}
+
+.todo-list li .toggle {
+	text-align: center;
+	/* width: 40px; */
+	/* auto, since non-WebKit browsers doesn't support input styling */
+	/* height: auto; */
+	position: relative;
+	top: 0;
+	bottom: 0;
+	margin: 2px 0;
+	border: none; /* Mobile Safari */
+	-webkit-appearance: none;
+	appearance: none;
+    
+}
+
+input[type=file]:focus, input[type=checkbox]:focus, input[type=radio]:focus {
+    outline: none;
+    outline-offset:0;
+}
+.todo-list li .toggle:after {
+	content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#8B8988" stroke-width="3"/></svg>');
+}
+
+.todo-list li .toggle:checked:after {
+	content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#bddad5" stroke-width="3"/><path fill="#5dc2af" d="M72 25L42 71 27 56l-4 4 20 20 34-52z"/></svg>');
+}
+
+.todo-list li label {
+	word-break: break-all;
+    padding: 12px 16px;
+    font-weight: 100;
+	/* padding: 15px 60px 15px 15px; */
+	/* margin-left: 45px; */
+    margin-bottom: 0px;
+	/* display: inline; */
+    /* line-height: 1.2em; */
+
+	transition: color 0.4s;
+}
+.todo-list li span {
+    font-weight: 100;
+	transition: color 0.4s;
+}
+
+.todo-list li.completed label {
+	color: #d9d9d9;
+	text-decoration: line-through;
+}
+.todo-list li.completed span {
+	color: #d9d9d9;
+	text-decoration: line-through;
+}
+
+.todo-list li .destroy {
+	display: none;
+	position: absolute;
+	top: 0;
+	right: 10px;
+	bottom: 0;
+	width: 40px;
+	/* height: 40px; */
+	margin: auto 0;
+	font-size: 30px;
+	color: #cc9a9a;
+	margin-bottom: 11px;
+	transition: color 0.2s ease-out;
+}
+
+.todo-list li .destroy:hover {
+	color: #af5b5e;
+}
+
+.todo-list li .destroy:after {
+	content: 'Ã—';
+}
+
+.todo-list li:hover .destroy {
+	display: block;
+}
+
+.todo-list li .edit {
+	display: none;
+}
+
+.todo-list li.editing:last-child {
+	margin-bottom: -1px;
+}
+
+.footer {
+	color: #777;
+	padding: 10px 15px;
+	height: 20px;
+	text-align: center;
+	border-top: 1px solid #e6e6e6;
+}
+
+.footer:before {
+	content: '';
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	height: 50px;
+	overflow: hidden;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2),
+	            0 8px 0 -3px #f6f6f6,
+	            0 9px 1px -3px rgba(0, 0, 0, 0.2),
+	            0 16px 0 -6px #f6f6f6,
+	            0 17px 2px -6px rgba(0, 0, 0, 0.2);
+}
+
+.todo-count {
+	float: left;
+	text-align: left;
+}
+
+.todo-count strong {
+	font-weight: 300;
+}
+
+.filters {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	position: absolute;
+	right: 0;
+	left: 0;
+}
+
+.filters li {
+	display: inline;
+}
+
+.filters li a {
+	color: inherit;
+	margin: 3px;
+	padding: 3px 7px;
+	text-decoration: none;
+	border: 1px solid transparent;
+	border-radius: 3px;
+}
+
+.filters li a:hover {
+	border-color: rgba(175, 47, 47, 0.1);
+}
+
+.filters li a.selected {
+	border-color: rgba(175, 47, 47, 0.2);
+}
+
+.clear-completed,
+html .clear-completed:active {
+	float: right;
+	position: relative;
+	line-height: 20px;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.clear-completed:hover {
+	text-decoration: underline;
+}
+
+.info {
+	margin: 65px auto 0;
+	color: #bfbfbf;
+	font-size: 10px;
+	text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+	text-align: center;
+}
+
+.info p {
+	line-height: 1;
+}
+
+.info a {
+	color: inherit;
+	text-decoration: none;
+	font-weight: 400;
+}
+
+.info a:hover {
+	text-decoration: underline;
+}
+.vcenter {
+    display: flex;
+    align-items: center;
+    /* justify-content: flex-start */
+}
+/*
+	Hack to remove background from Mobile Safari.
+	Can't use it globally since it destroys checkboxes in Firefox
+*/
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+	.toggle-all,
+	.todo-list li .toggle {
+		background: none;
+	}
+
+	.todo-list li .toggle {
+		/* height: 40px; */
+	}
+	.todo-list li label {
+		/* height: 40px; */
+	}
+
+	.toggle-all {
+		-webkit-transform: rotate(90deg);
+		transform: rotate(90deg);
+		-webkit-appearance: none;
+		appearance: none;
+	}
+}
+
+@media (max-width: 430px) {
+	.footer {
+		height: 50px;
+	}
+
+	.filters {
+		bottom: 10px;
+	}
+}
+
+/* debugging purpose */
+/* [class*='row'] {
+    border: 2px solid gray;
+
+}
+
+[class*='col-'] {
+    border: 2px solid tomato;
+
+} */
+.sidebar {
+    padding-left: 30px;
+    /* background-color: beige; */
+
+}
+
+.sidebar li{
+    padding-left:10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    
+    /* border: 1px solid gray; */
+    box-shadow: 0 5px 15px 0 rgba(0, 0, 0, 0.2),
+                0 5px 10px 0 rgba(0, 0, 0, 0.1);
+    /* transform: scale(1); */
+}
+.sidebar li:hover{
+    transform: scale(1.1);
+}
+.sidebar .nav li.active{
+/* color: #fff; */
+background-color: rgba(219, 213, 212, 0.7);
+padding-top: 50px;
+/* -webkit-transition: height background-color 500ms ease-in;
+-ms-transition: height background-color 500ms ease-in; */
+transform: translate(-2px,-1px);
+transition: transform 200ms, background-color 200ms, padding 200ms;
+
+
+}
+</style>
