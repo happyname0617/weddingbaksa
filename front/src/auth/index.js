@@ -2,7 +2,8 @@
 import router from '../router'
 
 // endpoints
-const API_URL = 'http://localhost:3000/'
+// const API_URL = 'http://localhost:3000/'
+const API_URL = 'http://www.weddingbaksa.com/'
 const LOGIN_URL = API_URL + 'login'
 const SIGNUP_URL = API_URL + 'user/register'
 
