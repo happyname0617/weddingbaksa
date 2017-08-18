@@ -140,7 +140,7 @@ function addInitialChecklist(userid){
   console.log('addInitialChecklist');
   var table = {};
   //get all category list from bskim user
-  Category.getCategoryByOwnerId('599601cf814fd55e304dad19', (err, list) => {
+  Category.getCategoryByOwnerId('599698a3c72cb0674180719c', (err, list) => {
     // console.log('typeof list',typeof list);
     // console.log(JSON.stringify(list));
     console.log('list.length',list.length)
@@ -169,7 +169,7 @@ function addInitialChecklist(userid){
         })
       },function(err){
         console.log('table',table);
-        Todo.getTodoByOwnerId('599601cf814fd55e304dad19', (err, todos) => {
+        Todo.getTodoByOwnerId('599698a3c72cb0674180719c', (err, todos) => {
           todos.forEach(function(todo){
             let categoryid = table[todo.categoryid];
             console.log('categoryid',categoryid)

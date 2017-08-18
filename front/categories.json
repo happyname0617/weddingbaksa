@@ -1,0 +1,18 @@
+{"_id":{"$oid":"599698a3c72cb0674180719d"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":1000,"budget_automatic":false,"budget_avg":0,"title":"웨딩촬영","__v":0}
+{"_id":{"$oid":"599698a3c72cb0674180719e"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":100012,"budget_automatic":true,"budget_avg":0,"title":"신혼집마련","__v":0}
+{"_id":{"$oid":"599698a3c72cb0674180719f"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":8,"budget_automatic":true,"budget_avg":0,"title":"약혼식","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a0"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"결혼식","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a1"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":10,"budget_automatic":true,"budget_avg":0,"title":"예물","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a2"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":8500,"budget_automatic":true,"budget_avg":0,"title":"신혼살림","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a3"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":false,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"함","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a4"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":300,"budget_automatic":true,"budget_avg":0,"title":"신혼여행후","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a5"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":50,"budget_automatic":true,"budget_avg":0,"title":"상견례","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a6"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"신혼여행","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a7"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"서류","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a8"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"예식장","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071a9"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"헤어 및 메이크업","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071aa"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"드레스 및 턱시도","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071ab"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"청첩장","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071ac"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"한복 및 예복","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071ad"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"피부관리","__v":0}
+{"_id":{"$oid":"599698a3c72cb067418071ae"},"ownerid":"599698a3c72cb0674180719c","descryption":"","required":true,"memo":"","budget":0,"budget_automatic":true,"budget_avg":0,"title":"예단","__v":0}
