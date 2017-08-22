@@ -3,8 +3,9 @@ import router from '../router'
 
 // endpoints
 // const API_URL = 'http://localhost:3000/'
-const API_URL = 'http://www.weddingbaksa.com/'
-const LOGIN_URL = API_URL + 'login'
+// const API_URL = 'http://www.weddingbaksa.com/'
+const API_URL = '/';
+const LOGIN_URL = API_URL + 'user/login'
 const SIGNUP_URL = API_URL + 'user/register'
 
 export default {
@@ -15,8 +16,9 @@ export default {
 	},
 
 	login(context, creds, redirect){
-        console.log('login');
+        console.log('login function');
         var app = this;
+        console.log('LOGIN_URL',LOGIN_URL);
         context.$http.post(LOGIN_URL, creds)
         .then(response => {
             console.log(response.data)

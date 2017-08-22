@@ -212,19 +212,20 @@ app.post('/user/login',function(req,res){
   console.log('username:',req.body.username);
   console.log('password:',req.body.password);
   User.getUserByUsername(username, (err, user) => {
-    if(err) throw err;
+    if(err) {console.log('err',err);throw err};
     if(!user){
+      console.log('User not found');
       return res.json({success: false, msg: 'User not found'});
     }
 
     User.comparePassword(password, user.password, (err, isMatch) => {
-      if(err) throw err;
+      if(err) {console.log('err',err);throw err;}
       if(isMatch){
         const token = createToken(user.id);
         // const token = jwt.sign(payload, config.SECRET_KEY, {
         //   expiresIn: 604800 // 1 week
         // });
-
+        console.log('succeed');
         res.json({
           success: true,
           token: 'JWT '+token,
@@ -236,6 +237,7 @@ app.post('/user/login',function(req,res){
           }
         });
       } else {
+        console.log('Wrong password');
         return res.json({success: false, msg: 'Wrong password'});
       }
     });

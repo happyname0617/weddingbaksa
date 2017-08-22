@@ -1,7 +1,6 @@
 <template>
   <section>
-        <div class="row">
-            <div class="col-sm-3 col-md-2 sidebar">
+            <div class="sidebar">
                 <!-- <h1 class='page-header'>카테고리</h1> -->
                 <!-- <input class="new-category"
                 placeholder="추가할 카테고리를 넣으세요"
@@ -12,6 +11,7 @@
                     <li class="category"  @click="selectAll()" :class="{active:selectedCategory._id=='all'}">
                         <label>전체</label>
                         <span> 예산{{getAllbudget()}}만원</span>
+                        <span class='navigation'> > </span>
                     </li>
                     <li v-for="category in categories"
                         class="category"
@@ -32,12 +32,12 @@
                         </span>
                         <button v-show='category==editingCategory' @click='updateCategory(category)'>Update</button>
                         <!-- <button v-show='category==editingCategory' @click='deleteCategory(category)'>Delete</button> -->
-                        
+                        <span class='navigation'> > </span>
                     </li>
                 </ul>    
             </div>  
-            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 checklist">
-                <!-- <h1 class='page-header'>할일목록</h1> -->
+            <div class="checklist" :class="{active:toggleOn}">
+                <button @click='goback'>뒤로</button>
                 <h1 class='page-header'>{{selectedCategory.title}}</h1>
                 <input class="new-todo" 
                 :class="{hidden:selectedCategory._id=='all'}"
@@ -70,7 +70,7 @@
                     </li>
                 </ul>        
             </div>
-        </div>
+      
     <!-- <footer class="info">
     <p>Double-click to edit a todo</p>
     <p>Written by <a href="http://evanyou.me">Evan You</a></p>
@@ -111,6 +111,7 @@ export default {
         newCategory:{title:''},
         editingCategory:{},
         selectedCategory:{_id:'all',title:'전체'},
+        toggleOn:false,
         error:{}
     }
   },
@@ -147,10 +148,16 @@ export default {
     },
     selected:function(category){
         this.selectedCategory = category;
+        this.toggleOn=true;
+    },
+    goback:function()
+    {
+        this.toggleOn=false;
     },
     selectAll:function()
     {
         this.selectedCategory={_id:'all',title:'전체'};
+        this.toggleOn=true;
     },
     fetchCategory: function() {
           var parent = this;
@@ -159,7 +166,9 @@ export default {
           var authHeader = auth.getAuthHeader();
           console.log('userid',userid)
           console.log('authHeader',authHeader)
-          this.$http.get('http://localhost:3000/category/list/'+userid,{headers:authHeader})
+        //   this.$http.get('http://localhost:3000/category/list/'+userid,{headers:authHeader})
+          //this.$http.get('http://www.weddingbaksa.com/category/list/'+userid,{headers:authHeader})
+          this.$http.get('/category/list/'+userid,{headers:authHeader})
           .then(function(response){
             parent.categories = response.data;
             console.log(response.data)
@@ -193,7 +202,8 @@ export default {
         }   
         console.log('userid',userid)
         console.log('authHeader',authHeader)
-        this.$http.post('http://localhost:3000/category/add',newCategory,{headers:authHeader})
+        // this.$http.post('http://localhost:3000/category/add',newCategory,{headers:authHeader})
+        this.$http.post('/category/add',newCategory,{headers:authHeader})
             .then(function(response){
             //parent.todos = response.data;
                 parent.newCategory = ''
@@ -231,7 +241,8 @@ export default {
  
         console.log('userid',userid)
         console.log('authHeader',authHeader)
-        this.$http.put('http://localhost:3000/category/update',newCategory,{headers:authHeader})
+        // this.$http.put('http://localhost:3000/category/update',newCategory,{headers:authHeader})
+        this.$http.put('/category/update',newCategory,{headers:authHeader})
             .then(function(response){
                 this.editingCategory = null
                 console.log(response.data);
@@ -251,7 +262,8 @@ export default {
 
         var authHeader = auth.getAuthHeader();
         console.log('authHeader',authHeader)
-        this.$http.delete('http://localhost:3000/category/delete/'+category._id,{headers:authHeader})
+        // this.$http.delete('http://localhost:3000/category/delete/'+category._id,{headers:authHeader})
+        this.$http.delete('/category/delete/'+category._id,{headers:authHeader})
             .then(function(response){
                 this.editingCategory = null
                 console.log(response.data)
@@ -288,7 +300,8 @@ export default {
         }   
         // console.log('newTodo',newTodo)
         console.log('authHeader',authHeader)
-        this.$http.post('http://localhost:3000/todo/add',newTodo,{headers:authHeader})
+        // this.$http.post('http://localhost:3000/todo/add',newTodo,{headers:authHeader})
+        this.$http.post('/todo/add',newTodo,{headers:authHeader})
             .then(function(response){
             //parent.todos = response.data;
                 parent.newTodo = '';
@@ -322,7 +335,8 @@ export default {
         // }   
         console.log('todo._id',todo._id)
         console.log('authHeader',authHeader)
-        this.$http.put('http://localhost:3000/todo/update',newTodo,{headers:authHeader})
+        // this.$http.put('http://localhost:3000/todo/update',newTodo,{headers:authHeader})
+        this.$http.put('/todo/update',newTodo,{headers:authHeader})
             .then(function(response){
 //                parent.editingTodo = null;
                 this.editingTodo = null;
@@ -341,7 +355,8 @@ export default {
         parent.message = "deleting todo";
         var authHeader = auth.getAuthHeader();
        console.log('authHeader',authHeader)
-        this.$http.delete('http://localhost:3000/todo/delete/'+todo._id,{headers:authHeader})
+        // this.$http.delete('http://localhost:3000/todo/delete/'+todo._id,{headers:authHeader})
+        this.$http.delete('/todo/delete/'+todo._id,{headers:authHeader})
             .then(function(response){
                 parent.editingTodo = null
                 console.log(response.data)
@@ -362,7 +377,8 @@ export default {
           var authHeader = auth.getAuthHeader();
           console.log('userid',userid)
           console.log('authHeader',authHeader)
-          this.$http.get('http://localhost:3000/todo/get/'+userid,{headers:authHeader})
+        //   this.$http.get('http://localhost:3000/todo/get/'+userid,{headers:authHeader})
+          this.$http.get('/todo/get/'+userid,{headers:authHeader})
           .then(function(response){
             parent.todos = response.data;
             console.log(response.data)
@@ -478,19 +494,29 @@ body {
 }
 
 .checklist {
-    display:block;
+    /* display:block; */
 	background: #fff;
-    min-width: 230px;
+    width:100vw;
 	max-width: 800px;
+    height:100vh;
+    /* top: 0px; */
 	/* margin: 130px 0 40px 0; */
-    margin-top: 0px;
+    /* margin-top: 0px;
     margin-bottom:40px;
     margin-left:auto;
-    margin-right:auto;
+    margin-right:auto; */
 
-	position: relative;
+	position: absolute;
 	box-shadow: 0 15px 15px 0 rgba(0, 0, 0, 0.2),
 	            0 25px 50px 0 rgba(0, 0, 0, 0.1);
+    -webkit-transition:-webkit-transform .3s ease-in-out; 
+    -webkit-transform: translateX(100%);
+
+}
+
+.checklist.active {
+    -webkit-transform: translateX(0%);
+    overflow: scroll;
 }
 
 .checklist input::-webkit-input-placeholder {
@@ -566,7 +592,8 @@ body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
-
+.navigation{
+}
 .new-todo {
 	padding: 16px 16px 16px 60px;
 	/* border: none; */
@@ -809,6 +836,10 @@ html .clear-completed:active {
 .info a:hover {
 	text-decoration: underline;
 }
+.row{
+    margin-left: 0px;
+    margin-right: 0px;
+}
 .vcenter {
     display: flex;
     align-items: center;
@@ -818,36 +849,8 @@ html .clear-completed:active {
 	Hack to remove background from Mobile Safari.
 	Can't use it globally since it destroys checkboxes in Firefox
 */
-@media screen and (-webkit-min-device-pixel-ratio:0) {
-	.toggle-all,
-	.todo-list li .toggle {
-		background: none;
-	}
 
-	.todo-list li .toggle {
-		/* height: 40px; */
-	}
-	.todo-list li label {
-		/* height: 40px; */
-	}
 
-	.toggle-all {
-		-webkit-transform: rotate(90deg);
-		transform: rotate(90deg);
-		-webkit-appearance: none;
-		appearance: none;
-	}
-}
-
-@media (max-width: 430px) {
-	.footer {
-		height: 50px;
-	}
-
-	.filters {
-		bottom: 10px;
-	}
-}
 
 /* debugging purpose */
 /* [class*='row'] {
@@ -860,8 +863,16 @@ html .clear-completed:active {
 
 } */
 .sidebar {
-    padding-left: 30px;
+    display:block;
+    width:100vw;
+    height:100vh;
+    /* top: 0px; */
+    overflow: scroll;
+    /* padding-left: 5px; */
+    max-width: 500px;
     /* background-color: beige; */
+    position: absolute;
+
 
 }
 
@@ -886,6 +897,9 @@ padding-top: 50px;
 -ms-transition: height background-color 500ms ease-in; */
 transform: translate(-2px,-1px);
 transition: transform 200ms, background-color 200ms, padding 200ms;
+}
+
+@media only screen and (min-width: 768px) {
 
 
 }
