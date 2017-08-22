@@ -206,7 +206,7 @@ function createToken(userid){
   });
   return token;
 }
-app.post('/login',function(req,res){
+app.post('/user/login',function(req,res){
   const username = req.body.username;
   const password = req.body.password;
   console.log('username:',req.body.username);
