@@ -5,7 +5,7 @@ import CheckList from '@/components/CheckList'
 import ItemList from '@/components/ItemList'
 import Register from '@/components/Register'
 import Login from '@/components/Login'
-
+import TodoList from '@/components/TodoList'
 Vue.use(Router)
 
 export default new Router({
@@ -19,6 +19,11 @@ export default new Router({
       path: '/checklist',
       name: 'CheckList',
       component: CheckList
+    },
+    {
+      path: '/todolist/:categoryid',
+      name: 'TodoList',
+      component: TodoList
     },
     {
       path: '/itemlist',

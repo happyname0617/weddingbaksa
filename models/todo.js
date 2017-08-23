@@ -53,6 +53,10 @@ module.exports.getTodoByOwnerId = function(userid, callback){
   Todo.find(query, callback);
 }
 
+module.exports.getTodoByQuery = function(query, callback){
+  Todo.find(query, callback);
+}
+
 
 module.exports.addTodo = function(newTodo, callback){
   console.log('newTodo',newTodo);

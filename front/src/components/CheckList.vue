@@ -6,23 +6,57 @@
                 placeholder="추가할 카테고리를 넣으세요"
                 v-model="newCategory.title"
                 @keyup.enter="addCatogory"> -->
-                <ul class="category-list nav nav-pills nav-stacked">
+                <div class='basic shadow'>
+                            <div>
+                                <label>예랑</label>
+                                <span>김병수</span>
+                            </div>
+                            <div>
+                                <label>예신</label>
+                                <span>김재림</span>
+                            </div>
+                            
+                            <div>
+                                <label>결혼 예정일</label>
+                                <span>2018년 8월 13일 오후 1시</span>
+                            </div>
+                            <div>
+                                <label>결혼 장소</label>
+                                <span>대전 컨벤션센터</span>
+                            </div>
+
+                            <div>
+                                <label>총 예산</label>
+                                <span>{{getAllbudget()}}만원</span>
+                            </div>
+                            
+                            
+                </div>
+                
+                <ul class="nav nav-pills nav-stacked">
                    
-                    <li class="category"  @click="selectAll()" :class="{active:selectedCategory._id=='all'}">
-                        <label>전체</label>
-                        <span> 예산{{getAllbudget()}}만원</span>
-                        <span class='navigation'> > </span>
-                    </li>
+                    <!-- <li class="category"  @click="selectAll()" :class="{active:selectedCategory._id=='all'}"> -->
+                        
+                    <!-- </li> -->
                     <li v-for="category in categories"
                         class="category"
                         :key="category._id"
                         :class="{active:category==selectedCategory}"
                         @click="selected(category)" @dblclick="categoryEdit(category)">
-                        <label v-show='category!=editingCategory' :class="{notrequired: !category.required}">{{ category.title }}</label>
+                        <!-- <label v-show='category!=editingCategory' :class="{notrequired: !category.required}">{{ category.title }}</label> -->
+                        <h1 class='page-header'>{{category.title}}</h1>
+                        <p>결혼의 꽂! 웨딩촬영! 예전엔 필수코스로 인식되었지만, 비싼 가격에 비해서 한두번 보고 마는 경우가 많아, 셀프촬영으로 대체하거나 생략하는 경우도 많아요. 하지만 평생 한번 있는 기회이니 신중하게 생각해야겠죠?</p>
+                        <p>서울지역 평균 예산: 100-200만원</p>
+                        <span><input type="radio" :id='category._id+"_none"' :value='none' :name='category._id' v-model="category.required">미정</span>
+                        <span><input type="radio" :id='category._id+"_yes"' :value='true' :name='category._id' v-model="category.required">해요</span>
+                        <span><input type="radio" :id='category._id+"_no"' :value='false' :name='category._id' v-model="category.required">안해요</span>
+
+                        <button @click='categoryEdit(category)' class='btn btn-default'>수정</button>
+                        <button> <router-link class='btn btn-default' v-bind:to="'/todolist/'+category._id">></router-link></button>
                         <input type='text'  v-show='category==editingCategory' @keyup.esc='categoryCancelEdit()' @keyup.enter='updateCategory(category)' v-model='category.title'> <!-- v-focus='category==editingCategory' -->
-                        <input v-show='category==editingCategory' type="radio" :id='category._id+"_yes"' :value='true' :name='category._id' v-model="category.required"><label v-show='category==editingCategory'>해요</label>
-                        <input v-show='category==editingCategory' type="radio" :id='category._id+"_no"' :value='false' :name='category._id' v-model="category.required"><label v-show='category==editingCategory'>안해요</label>
-                        <span v-show='category.required && (category.budget_automatic?getbudget(category):category.budget)>0 && category!=editingCategory'>예산{{category.budget_automatic?getbudget(category):category.budget}}만원</span>
+                        <!-- <input v-show='category==editingCategory' type="radio" :id='category._id+"_yes"' :value='true' :name='category._id' v-model="category.required"><label v-show='category==editingCategory'>해요</label>
+                        <input v-show='category==editingCategory' type="radio" :id='category._id+"_no"' :value='false' :name='category._id' v-model="category.required"><label v-show='category==editingCategory'>안해요</label> -->
+                        <!-- <span v-show='category.required && (category.budget_automatic?getbudget(category):category.budget)>0 && category!=editingCategory'>예산{{category.budget_automatic?getbudget(category):category.budget}}만원</span> -->
                         <span v-show='category.required && category==editingCategory'>
                             <span>예산</span>
                             <span><input type="radio" :id='category._id+"_budgetAutoYes"' :value='true' :name='category._id+"_budget"' v-model="category.budget_automatic">자동계산</span>
@@ -32,44 +66,10 @@
                         </span>
                         <button v-show='category==editingCategory' @click='updateCategory(category)'>Update</button>
                         <!-- <button v-show='category==editingCategory' @click='deleteCategory(category)'>Delete</button> -->
-                        <span class='navigation'> > </span>
+                        
                     </li>
                 </ul>    
             </div>  
-            <div class="checklist" :class="{active:toggleOn}">
-                <button @click='goback'>뒤로</button>
-                <h1 class='page-header'>{{selectedCategory.title}}</h1>
-                <input class="new-todo" 
-                :class="{hidden:selectedCategory._id=='all'}"
-                placeholder="추가할 항목을 넣으세요"
-                v-model="newTodo.title"
-                @keyup.enter="addTodo">
-                <ul class="todo-list">
-                    <li v-for="todo in filteredtodo"
-                        class="todo"
-                        :key="todo._id"
-                        :class="{completed: todo.completed, editing:todo==editingTodo}"
-                        @dblclick="todoEdit(todo)">
-                        <div class='row vcenter'>
-
-                            <input class="toggle col-sm-1" type="checkbox" v-model="todo.completed">
-                            <label v-show='todo!=editingTodo' class='col-sm-5'>{{ todo.title }}</label>
-                            <!-- <input type="number" v-model="todo.budget"> -->
-                            <input class="col-sm-5 edit" v-show='todo==editingTodo' type='text'  @keyup.esc='todoCancelEdit()' @keyup.enter='updateTodo(todo)' v-model='todo.title'> <!-- v-focus='todo==editingTodo' -->
-                            <span v-show='todo.budget>0 && todo!=editingTodo' class='col-sm-6'>예산{{todo.budget}}만원</span>
-                            <span v-show='todo.budget==0 && todo!=editingTodo' class='col-sm-6'></span>
-                            <span v-show='todo==editingTodo' class='col-sm-4 ' >
-                                <span>예산<input type="number" @keyup.esc='todoCancelEdit()' @keyup.enter='updateTodo(todo)'  v-model="todo.budget" placeholder="예산">만원</span>
-                                <span v-show='todo.budget_avg>=0'>평균{{todo.budget_avg}} 만원</span>
-                            </span>
-                            <!-- <input type="number" @keyup.esc='todoCancelEdit()' @keyup.enter='updateTodo(todo)' v-model="todo.budget" v-if='todo==editingTodo'>
-                            <input type="number" @keyup.esc='todoCancelEdit()' @keyup.enter='updateTodo(todo)' v-model="todo.budget_avg" v-if='todo==editingTodo'> -->
-                            <button v-if='todo==editingTodo' class='col-sm-1 btn btn-default' @click='updateTodo(todo)'>저장</button>
-                            <button v-if='todo==editingTodo' class='col-sm-1 btn btn-default' @click='removeTodo(todo)'>삭제</button>
-                        </div>
-                    </li>
-                </ul>        
-            </div>
       
     <!-- <footer class="info">
     <p>Double-click to edit a todo</p>
@@ -80,6 +80,8 @@
   </section>
 </template>
 <script>
+const API_URL = process.env.API_URL;
+console.log('API_URL checklist',API_URL);
 import auth from '../auth'
 // let currentIdx =0;
 export default {
@@ -89,25 +91,7 @@ export default {
         //userid:'bskim',
         message:'message place',
         categories:[
-            // {id:'1',title:'상견례',description:'',required:true},
-            // {id:'2',title:'예물',description:'',required:true},
-            // {id:'3',title:'예단',description:'',required:true},
-            // {id:'4',title:'폐백',description:'',required:true},
-            // {id:'5',title:'스튜디오촬영',description:'',required:true},
-            // {id:'6',title:'피로연',description:'',required:true},
-            // {id:'7',title:'예식장',description:'',required:true},
-            // {id:'8',title:'신혼여행',description:'',required:true}
             ],
-        todos:[],
-            // {id:'1',categoryid:'8',title:'장소,기간,예산 계획',completed:false,memo:''},
-            // {id:'2',categoryid:'8',title:'예약완료',completed:false,memo:''},
-            // {id:'3',categoryid:'8',title:'여권준비',completed:false,memo:''},
-            // {id:'4',categoryid:'8',title:'비자준비(필요시)',completed:false,memo:''},
-            // {id:'5',categoryid:'8',title:'신혼여행 준비물 리스트작성',completed:false,memo:''},
-            // {id:'6',categoryid:'8',title:'해외여행시 신용카드준비',completed:false,memo:''}
-        //],
-        newTodo:{title:''},
-        editingTodo:{},
         newCategory:{title:''},
         editingCategory:{},
         selectedCategory:{_id:'all',title:'전체'},
@@ -118,27 +102,19 @@ export default {
   methods:{
 
     getAllbudget:function(){
-        var parent = this;
-        return this.categories.reduce(function(acc,item){
-            return acc+(item.budget_automatic?parent.getbudget(item):item.budget);
-        },0);
+        // var parent = this;
+        // return this.categories.reduce(function(acc,item){
+        //     return acc+(item.budget_automatic?parent.getbudget(item):item.budget);
+        // },0);
     },
-    getbudget:function(category){
-        var newlist =[];
-        var parent=this;
-        newlist = parent.todos.filter(function(element){
-            return (element.categoryid==category._id);
-        });
-        return newlist.reduce(function(acc,item){return acc+=item.budget},0)
-    },
-    todoEdit:function(todo){
-        this.editingTodo=todo; 
-        console.log('todo.editing ',this.editingTodo )
-    },
-    todoCancelEdit: function () {
-      this.editingTodo = null
-      console.log('todo.editing cancel',this.editingTodo )
-    },    
+    // getbudget:function(category){
+    //     var newlist =[];
+    //     var parent=this;
+    //     newlist = parent.todos.filter(function(element){
+    //         return (element.categoryid==category._id);
+    //     });
+    //     return newlist.reduce(function(acc,item){return acc+=item.budget},0)
+    // },    
     categoryEdit:function(category){
         this.editingCategory=category; 
         console.log('category.editing ',this.editingCategory )
@@ -154,11 +130,6 @@ export default {
     {
         this.toggleOn=false;
     },
-    selectAll:function()
-    {
-        this.selectedCategory={_id:'all',title:'전체'};
-        this.toggleOn=true;
-    },
     fetchCategory: function() {
           var parent = this;
           parent.message = "fetching category list...";
@@ -166,9 +137,7 @@ export default {
           var authHeader = auth.getAuthHeader();
           console.log('userid',userid)
           console.log('authHeader',authHeader)
-        //   this.$http.get('http://localhost:3000/category/list/'+userid,{headers:authHeader})
-          //this.$http.get('http://www.weddingbaksa.com/category/list/'+userid,{headers:authHeader})
-          this.$http.get('/category/list/'+userid,{headers:authHeader})
+        this.$http.get(API_URL+'/category/list/'+userid,{headers:authHeader})
           .then(function(response){
             parent.categories = response.data;
             console.log(response.data)
@@ -202,8 +171,7 @@ export default {
         }   
         console.log('userid',userid)
         console.log('authHeader',authHeader)
-        // this.$http.post('http://localhost:3000/category/add',newCategory,{headers:authHeader})
-        this.$http.post('/category/add',newCategory,{headers:authHeader})
+        this.$http.post(API_URL+'/category/add',newCategory,{headers:authHeader})
             .then(function(response){
             //parent.todos = response.data;
                 parent.newCategory = ''
@@ -241,8 +209,7 @@ export default {
  
         console.log('userid',userid)
         console.log('authHeader',authHeader)
-        // this.$http.put('http://localhost:3000/category/update',newCategory,{headers:authHeader})
-        this.$http.put('/category/update',newCategory,{headers:authHeader})
+        this.$http.put(API_URL+'/category/update',newCategory,{headers:authHeader})
             .then(function(response){
                 this.editingCategory = null
                 console.log(response.data);
@@ -262,8 +229,7 @@ export default {
 
         var authHeader = auth.getAuthHeader();
         console.log('authHeader',authHeader)
-        // this.$http.delete('http://localhost:3000/category/delete/'+category._id,{headers:authHeader})
-        this.$http.delete('/category/delete/'+category._id,{headers:authHeader})
+        this.$http.delete(API_URL+'/category/delete/'+category._id,{headers:authHeader})
             .then(function(response){
                 this.editingCategory = null
                 console.log(response.data)
@@ -275,121 +241,10 @@ export default {
             );
               
         
-    },       
-    addTodo: function () {
-        var value = this.newTodo.title && this.newTodo.title.trim()
-        if (!value) {
-            return
-        }
-        var parent = this;
-        parent.message = "adding todo list...";
-        var userid = auth.user.id;
-        var authHeader = auth.getAuthHeader();
-        // var newTodo = this.newTodo;
-        // newTodo.title = value;
+    }
+  },       
 
-        var newTodo = {
-            ownerid: userid,
-            title: this.newTodo.title,
-            categoryid: parent.selectedCategory._id,
-            memo: '', //TODO
-            completed: false,//TODO
-            descryption: '', //TODO
-            budget:0,
-            budget_avg:0
-        }   
-        // console.log('newTodo',newTodo)
-        console.log('authHeader',authHeader)
-        // this.$http.post('http://localhost:3000/todo/add',newTodo,{headers:authHeader})
-        this.$http.post('/todo/add',newTodo,{headers:authHeader})
-            .then(function(response){
-            //parent.todos = response.data;
-                parent.newTodo = '';
-                parent.todos.push(newTodo)
-                console.log(response.data)
-                },error=>{
-                    console.log(error)
-                }
-            );
-              
-        
-    },
-    updateTodo: function (todo) {
-        var value = todo.title && todo.title.trim()
-        if (!value) {
-            return
-        }
-        var parent = this;
-        parent.message = "updating todo";
-        var authHeader = auth.getAuthHeader();
-        var newTodo = todo;
-        newTodo.title = value;
-        // {
-        //     _id: todo._id,
-        //     title: value,
-        //     ownerid:todo.ownerid,
-        //     categoryid: todo.categoryid,
-        //     memo: todo.memo, //TODO
-        //     completed: todo.completed,//TODO
-        //     descryption: todo.descryption //TODO
-        // }   
-        console.log('todo._id',todo._id)
-        console.log('authHeader',authHeader)
-        // this.$http.put('http://localhost:3000/todo/update',newTodo,{headers:authHeader})
-        this.$http.put('/todo/update',newTodo,{headers:authHeader})
-            .then(function(response){
-//                parent.editingTodo = null;
-                this.editingTodo = null;
-                console.log(response.data);
-                parent.fetchTodos();
-                },error=>{
-                    console.log(error)
-                }
-            );
-              
-        
-    },
-    removeTodo: function (todo) {
-        console.log(todo)
-        var parent = this;
-        parent.message = "deleting todo";
-        var authHeader = auth.getAuthHeader();
-       console.log('authHeader',authHeader)
-        // this.$http.delete('http://localhost:3000/todo/delete/'+todo._id,{headers:authHeader})
-        this.$http.delete('/todo/delete/'+todo._id,{headers:authHeader})
-            .then(function(response){
-                parent.editingTodo = null
-                console.log(response.data)
-                parent.fetchTodos();
-                //this.todos.splice(this.todos.indexOf(todo), 1)
-                },error=>{
-                    console.log(error)
-                }
-            );
-              
-        
-    },     
-    fetchTodos: 
-        function() {
-          var parent = this;
-          parent.message = "fetching todo list...";
-          var userid = auth.user.id;
-          var authHeader = auth.getAuthHeader();
-          console.log('userid',userid)
-          console.log('authHeader',authHeader)
-        //   this.$http.get('http://localhost:3000/todo/get/'+userid,{headers:authHeader})
-          this.$http.get('/todo/get/'+userid,{headers:authHeader})
-          .then(function(response){
-            parent.todos = response.data;
-            console.log(response.data)
-          },error=>{
-
-          });
-        }
-    
-  },
   created:function(){
-     this.fetchTodos();
      this.fetchCategory();
   },
   directives: {
@@ -400,44 +255,13 @@ export default {
     }
   },
   computed:{
-    // allcategorylist:function(){
-    //       var newlist =[];
-    //       newlist.push({_id:'-1',title:'전체',required:true});
-    //       this.categories.forEach(function(element){
-    //           //if(element.required)
-    //            {newlist.push(element);}
-    //       });
-    //       return newlist;
-    // },
     activeCategoryIds:function(){
         var newlist =[];
         this.categories.forEach(function(element){
             if(element.required) newlist.push(element._id);
         });
         return newlist;
-    },
-    allTodos:function(){
-        console.log(this.activeCategoryIds);
-          var parent=this;
-          return this.todos.filter(function(element){
-              return parent.activeCategoryIds.indexOf(element.categoryid)>-1;
-          });
-    },
-    filteredtodo:function(){
-        var newlist =[];
-        var parent=this;
-        if (this.selectedCategory._id=='all') {
-            return this.allTodos;
-        }
-        else{
-            return this.todos.filter(function(element){
-            return (element.categoryid==parent.selectedCategory._id);
-            })
-        }
-
-    },
-
-
+    }
   }
 }
 
@@ -499,6 +323,9 @@ body {
     width:100vw;
 	max-width: 800px;
     height:100vh;
+    padding-bottom:10px;
+    z-index:2000;
+
     /* top: 0px; */
 	/* margin: 130px 0 40px 0; */
     /* margin-top: 0px;
@@ -506,7 +333,7 @@ body {
     margin-left:auto;
     margin-right:auto; */
 
-	position: absolute;
+	position: fixed;
 	box-shadow: 0 15px 15px 0 rgba(0, 0, 0, 0.2),
 	            0 25px 50px 0 rgba(0, 0, 0, 0.1);
     -webkit-transition:-webkit-transform .3s ease-in-out; 
@@ -591,8 +418,6 @@ body {
 	box-sizing: border-box;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-}
-.navigation{
 }
 .new-todo {
 	padding: 16px 16px 16px 60px;
@@ -718,6 +543,18 @@ input[type=file]:focus, input[type=checkbox]:focus, input[type=radio]:focus {
 	color: #cc9a9a;
 	margin-bottom: 11px;
 	transition: color 0.2s ease-out;
+}
+
+.basic {
+    /* background: url('https://s.cdpn.io/7635/averyson-logo.gif');
+    background-size: length;
+    background-repeat: no-repeat; */
+    /* height:200px;  */
+    /* box-shadow: 0 15px 15px 0 rgba(0, 0, 0, 0.2),
+	            0 25px 50px 0 rgba(0, 0, 0, 0.1); */
+    padding-left:20px;
+    padding-top:30px;
+    padding-bottom:20px;
 }
 
 .todo-list li .destroy:hover {
@@ -865,13 +702,14 @@ html .clear-completed:active {
 .sidebar {
     display:block;
     width:100vw;
-    height:100vh;
+    /* height:calc(100vh - 50px); */
+    /* margin-top:50px; */
     /* top: 0px; */
-    overflow: scroll;
+    /* overflow: scroll; */
     /* padding-left: 5px; */
     max-width: 500px;
     /* background-color: beige; */
-    position: absolute;
+    position: relative;
 
 
 }
@@ -887,16 +725,16 @@ html .clear-completed:active {
     /* transform: scale(1); */
 }
 .sidebar li:hover{
-    transform: scale(1.1);
+    /* transform: scale(1.1); */
 }
 .sidebar .nav li.active{
 /* color: #fff; */
-background-color: rgba(219, 213, 212, 0.7);
-padding-top: 50px;
+/* background-color: rgba(219, 213, 212, 0.7); */
+/* padding-top: 50px; */
 /* -webkit-transition: height background-color 500ms ease-in;
 -ms-transition: height background-color 500ms ease-in; */
-transform: translate(-2px,-1px);
-transition: transform 200ms, background-color 200ms, padding 200ms;
+/* transform: translate(-2px,-1px);
+transition: transform 200ms, background-color 200ms, padding 200ms; */
 }
 
 @media only screen and (min-width: 768px) {

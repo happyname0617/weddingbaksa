@@ -472,6 +472,7 @@ app.delete('/category/delete/:id',passport.authenticate('jwt', { session: false 
 });  
 app.get('/todo/get/:userid',passport.authenticate('jwt', { session: false }),function(req, res) {
     console.log('/todo/get/',req.params.userid)
+    
     var userid = req.params.userid;
     //res.json(todos);
     Todo.getTodoByOwnerId(userid, (err, todos) => {
@@ -483,6 +484,25 @@ app.get('/todo/get/:userid',passport.authenticate('jwt', { session: false }),fun
       }
       
     })
+
+});
+app.get('/todo/get/:userid/:categoryid',passport.authenticate('jwt', { session: false }),function(req, res) {
+  console.log('/todo/get/userid:',req.params.userid)
+  console.log('/todo/get/categoryid:',req.params.categoryid)
+  
+  var userid = req.params.userid;
+  var categoryid = req.params.categoryid;
+  //res.json(todos);
+  const query = {ownerid:userid,categoryid:categoryid};
+  Todo.getTodoByQuery(query, (err, todos) => {
+    if(err){
+      res.json({success: false, msg:'Failed to get todo list'});
+    }
+    else{
+      res.json(todos);
+    }
+    
+  })
 
 });
 

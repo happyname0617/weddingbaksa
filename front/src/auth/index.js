@@ -2,11 +2,10 @@
 import router from '../router'
 
 // endpoints
-// const API_URL = 'http://localhost:3000/'
-// const API_URL = 'http://www.weddingbaksa.com/'
-const API_URL = '/';
-const LOGIN_URL = API_URL + 'user/login'
-const SIGNUP_URL = API_URL + 'user/register'
+const API_URL = process.env.API_URL;
+console.log('API_URL',API_URL);
+const LOGIN_URL = API_URL + '/user/login'
+const SIGNUP_URL = API_URL + '/user/register'
 
 export default {
 	// user object is how we check auth status
